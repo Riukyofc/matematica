@@ -15,17 +15,21 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   // Theme persistence
   useEffect(() => {
-    const saved = localStorage.getItem("theme");
-    if (saved === "dark") {
-      document.documentElement.setAttribute("data-theme", "dark");
-    } else if (saved === "light") {
-      document.documentElement.removeAttribute("data-theme");
+    if (profile && profile.equippedTheme) {
+      document.documentElement.setAttribute("data-theme", String(profile.equippedTheme));
     } else {
-      // Default to dark
-      document.documentElement.setAttribute("data-theme", "dark");
-      localStorage.setItem("theme", "dark");
+      const saved = localStorage.getItem("theme");
+      if (saved === "dark") {
+        document.documentElement.setAttribute("data-theme", "dark");
+      } else if (saved === "light") {
+        document.documentElement.removeAttribute("data-theme");
+      } else {
+        // Default to dark
+        document.documentElement.setAttribute("data-theme", "dark");
+        localStorage.setItem("theme", "dark");
+      }
     }
-  }, []);
+  }, [profile?.equippedTheme]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -49,6 +53,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const xp = Number(profile?.xp) || 0;
   const level = Math.floor(xp / 500) + 1;
   const streak = Number(profile?.streak) || 0;
+  const coins = Number(profile?.coins) || 0;
 
   const navItems = [
     { id: "/dashboard", label: "Dashboard", icon: (
@@ -59,6 +64,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     )},
     { id: "/leaderboard", label: "Ranking", icon: (
       <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+    )},
+    { id: "/arena", label: "Arena Matemática", icon: (
+      <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+    ), sep: true },
+    { id: "/shop", label: "Lojinha", icon: (
+      <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
     )},
     { id: "/calculator", label: "Calculadora", icon: (
       <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
@@ -133,7 +144,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               <div className="flex items-center gap-2">
                 <p className="text-xs font-medium text-[var(--color-text-muted)]">Nv.{level}</p>
                 <span className="text-xs font-bold text-indigo-500">{xp} XP</span>
-                {streak > 0 && <span className="text-xs">🔥{streak}</span>}
+                <span className="text-xs font-bold text-yellow-500 ml-1">🟡 {coins}</span>
+                {streak > 0 && <span className="text-xs ml-1">🔥{streak}</span>}
               </div>
             </div>
           </div>

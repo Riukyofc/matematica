@@ -323,12 +323,19 @@ export async function getStudentInfractions(uid: string) {
 export async function getLeaderboard(limitCount: number = 10) {
   const q = query(collection(db, "users"), orderBy("xp", "desc"), limit(limitCount));
   const snap = await getDocs(q);
-  return snap.docs.map((d, i) => ({
-    uid: d.id, name: d.data().name || "Anônimo",
-    xp: d.data().xp || 0, level: Math.floor((d.data().xp || 0) / 500) + 1, pos: i + 1,
-    equippedBorder: d.data().equippedBorder || "",
-    equippedTitle: d.data().equippedTitle || "",
-  }));
+  return snap.docs.map((d, i) => {
+    const data = d.data();
+    return {
+      uid: d.id,
+      name: data.name || "Sem Nome",
+      xp: data.xp || 0,
+      level: Math.floor((data.xp || 0) / 500) + 1,
+      pos: i + 1,
+      equippedTitle: data.equippedTitle || "",
+      equippedBorder: data.equippedBorder || "",
+      coins: data.coins || 0
+    };
+  });
 }
 
 // ════════════════════ ALL STUDENTS ════════════════════
@@ -559,7 +566,7 @@ export async function purchaseItem(uid: string, item: ShopItem): Promise<{ succe
 
 export async function equipItem(uid: string, item: ShopItem) {
   const field = item.category === "theme" ? "equippedTheme" : item.category === "border" ? "equippedBorder" : "equippedTitle";
-  await updateDoc(doc(db, "users", uid), { [field]: item.id });
+  await updateDoc(doc(db, "users", uid), { [field]: item.preview });
 }
 
 export async function unequipItem(uid: string, category: "theme" | "border" | "title") {

@@ -81,6 +81,63 @@
   --shadow-glow: 0 0 30px rgba(139, 92, 246, 0.2);
 }
 
+/* ─── SHOP THEMES ─── */
+[data-theme="ocean"] {
+  --color-bg-primary: #082f49;
+  --color-bg-secondary: #0c4a6e;
+  --color-bg-card: rgba(14, 116, 144, 0.4);
+  --color-bg-card-hover: rgba(14, 116, 144, 0.7);
+  --color-text-primary: #e0f2fe;
+  --color-accent: #0ea5e9;
+  --color-accent-hover: #0284c7;
+  --color-accent-glow: rgba(14, 165, 233, 0.3);
+}
+
+[data-theme="sunset"] {
+  --color-bg-primary: #4a044e;
+  --color-bg-secondary: #701a75;
+  --color-bg-card: rgba(190, 24, 93, 0.4);
+  --color-bg-card-hover: rgba(190, 24, 93, 0.7);
+  --color-text-primary: #fdf4ff;
+  --color-accent: #f43f5e;
+  --color-accent-hover: #e11d48;
+  --color-accent-glow: rgba(244, 63, 94, 0.3);
+}
+
+[data-theme="matrix"] {
+  --color-bg-primary: #000000;
+  --color-bg-secondary: #022c22;
+  --color-bg-card: rgba(6, 78, 59, 0.4);
+  --color-bg-card-hover: rgba(6, 78, 59, 0.7);
+  --color-text-primary: #a7f3d0;
+  --color-text-secondary: #34d399;
+  --color-accent: #10b981;
+  --color-accent-hover: #059669;
+  --color-accent-glow: rgba(16, 185, 129, 0.4);
+}
+
+[data-theme="cyberpunk"] {
+  --color-bg-primary: #2e1065;
+  --color-bg-secondary: #4c1d95;
+  --color-bg-card: rgba(219, 39, 119, 0.3);
+  --color-bg-card-hover: rgba(219, 39, 119, 0.6);
+  --color-text-primary: #fce7f3;
+  --color-accent: #f472b6;
+  --color-accent-hover: #ec4899;
+  --color-accent-glow: rgba(244, 114, 182, 0.5);
+}
+
+[data-theme="galaxy"] {
+  --color-bg-primary: #0f172a;
+  --color-bg-secondary: #1e1b4b;
+  --color-bg-card: rgba(49, 46, 129, 0.5);
+  --color-bg-card-hover: rgba(49, 46, 129, 0.8);
+  --color-text-primary: #e0e7ff;
+  --color-accent: #818cf8;
+  --color-accent-hover: #6366f1;
+  --color-accent-glow: rgba(129, 140, 248, 0.5);
+}
+
 /* ─── Base Styles ─── */
 * {
   box-sizing: border-box;
@@ -297,6 +354,36 @@ body {
 .animate-gradient { 
   background-size: 200% 200%;
   animation: gradient-shift 3s ease infinite;
+}
+
+/* ─── ARENA ANIMATIONS ─── */
+@keyframes swordClash {
+  0% { transform: scale(1) rotate(0deg); }
+  20% { transform: scale(1.3) rotate(-15deg); }
+  40% { transform: scale(1.3) rotate(15deg); }
+  60% { transform: scale(1.4) rotate(0deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+.animate-sword-clash { animation: swordClash 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+@keyframes flashVersus {
+  0% { text-shadow: 0 0 0 transparent; color: var(--color-text-primary); }
+  50% { text-shadow: 0 0 20px var(--color-error); color: var(--color-error); transform: scale(1.2); }
+  100% { text-shadow: 0 0 0 transparent; color: var(--color-text-primary); }
+}
+.animate-versus { animation: flashVersus 1s infinite alternate; }
+
+/* ─── SHOP BORDERS ─── */
+.border-fire { box-shadow: 0 0 15px 2px #ef4444, inset 0 0 10px #ef4444; border-color: #ef4444 !important; animation: pulseGlow 2s infinite; }
+.border-ice { box-shadow: 0 0 15px 2px #3b82f6, inset 0 0 10px #3b82f6; border-color: #3b82f6 !important; animation: pulseGlow 3s infinite; }
+.border-neon { box-shadow: 0 0 20px 5px #10b981; border-color: #10b981 !important; animation: neonPulse 1.5s infinite; }
+.border-royal { box-shadow: 0 0 15px 2px #eab308, inset 0 0 15px #eab308; border-color: #eab308 !important; }
+.border-rainbow { 
+  border: 4px solid transparent !important;
+  background: linear-gradient(var(--color-bg-card), var(--color-bg-card)) padding-box,
+              linear-gradient(45deg, #ef4444, #eab308, #10b981, #3b82f6, #a855f7) border-box;
+  animation: gradient-shift 3s linear infinite;
+  background-size: 200% 200%;
 }
 
 /* ─── Tab component styles ─── */

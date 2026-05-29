@@ -8,7 +8,7 @@ export default function LeaderboardPage() {
   const { profile } = useAuth();
   const userName = profile?.name as string | undefined;
 
-  const [players, setPlayers] = useState<{ uid: string; name: string; xp: number; level: number; pos: number }[]>([]);
+  const [players, setPlayers] = useState<{ uid: string; name: string; xp: number; level: number; pos: number; equippedTitle?: string; equippedBorder?: string; coins?: number }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -68,7 +68,7 @@ export default function LeaderboardPage() {
                   </div>
                   
                   <div className="flex-1 min-w-0 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
+                    <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0 ${p.equippedBorder || ''}`}>
                       {p.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0">
@@ -76,7 +76,10 @@ export default function LeaderboardPage() {
                         {p.name}
                         {isYou && <span className="px-2 py-0.5 rounded-md bg-indigo-500 text-white text-[9px] uppercase tracking-wider shadow-sm">Você</span>}
                       </p>
-                      <p className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Nível {p.level}</p>
+                      {p.equippedTitle && (
+                        <p className="text-[10px] font-black bg-clip-text text-transparent bg-gradient-to-r from-yellow-500 to-orange-500 mt-0.5">{p.equippedTitle}</p>
+                      )}
+                      <p className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider mt-0.5">Nível {p.level}</p>
                     </div>
                   </div>
                   
