@@ -1,0 +1,147 @@
+rules_version = '2';
+
+// ============================================================
+// Saberes em Conexão — Firestore Security Rules
+// ============================================================
+// Estas regras protegem todos os dados do banco.
+// Para aplicar: Firebase Console → Firestore → Regras → Colar → Publicar
+// ============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Funções auxiliares ──
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isTeacher() {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'TEACHER';
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN';
+    }
+
+    function isTeacherOrAdmin() {
+      return isTeacher() || isAdmin();
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // USERS — Perfis de usuário
+    // ════════════════════════════════════════════════════════════
+    // - Qualquer autenticado pode ler perfis (para ranking)
+    // - Apenas o próprio usuário pode criar/editar seu perfil
+    // - Professores/Admin podem ler qualquer perfil
+    // - Ninguém pode alterar o campo 'role' (exceto admin)
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+
+      allow create: if isOwner(userId) &&
+        request.resource.data.keys().hasAll(['name', 'email', 'role']) &&
+        request.resource.data.role == 'STUDENT';
+
+      allow update: if isOwner(userId) &&
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'email']));
+
+      // Admin pode alterar qualquer campo
+      allow update: if isAdmin();
+
+      allow delete: if isAdmin();
+
+      // ── Sub-coleção: Resultados de Quiz ──
+      match /quizResults/{resultId} {
+        allow read: if isOwner(userId) || isTeacherOrAdmin();
+        allow create: if isOwner(userId);
+        allow update, delete: if false; // Resultados são imutáveis
+      }
+
+      // ── Sub-coleção: Notas do Aluno ──
+      match /notes/{noteId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // ── Sub-coleção: Conquistas ──
+      match /achievements/{achievementId} {
+        allow read: if isOwner(userId) || isTeacherOrAdmin();
+        allow create: if isOwner(userId);
+        allow update, delete: if false;
+      }
+
+      // ── Sub-coleção: Infrações ──
+      match /infractions/{infractionId} {
+        allow read: if isOwner(userId) || isTeacherOrAdmin();
+        allow create: if isOwner(userId) || isTeacherOrAdmin();
+        allow update, delete: if isTeacherOrAdmin();
+      }
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // LESSONS — Aulas
+    // ════════════════════════════════════════════════════════════
+    // - Todos autenticados podem ler
+    // - Apenas professores/admin podem criar/editar/deletar
+    match /lessons/{lessonId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isTeacherOrAdmin();
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // QUIZZES — Quizzes vinculados a aulas
+    // ════════════════════════════════════════════════════════════
+    match /quizzes/{quizId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isTeacherOrAdmin();
+
+      match /questions/{questionId} {
+        allow read: if isAuthenticated();
+        allow create, update, delete: if isTeacherOrAdmin();
+      }
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // TRACKS — Trilhas de aprendizado
+    // ════════════════════════════════════════════════════════════
+    match /tracks/{trackId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isTeacherOrAdmin();
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // CLASSES — Turmas
+    // ════════════════════════════════════════════════════════════
+    match /classes/{classId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isTeacherOrAdmin();
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // ACHIEVEMENTS_CATALOG — Catálogo de conquistas
+    // ════════════════════════════════════════════════════════════
+    match /achievementsCatalog/{achievementId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // GLOBAL_STATS — Estatísticas globais (leaderboard)
+    // ════════════════════════════════════════════════════════════
+    match /globalStats/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Atualizado apenas por Cloud Functions
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // Bloqueia tudo que não foi explicitamente permitido
+    // ════════════════════════════════════════════════════════════
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
