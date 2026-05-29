@@ -14,7 +14,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 export function useMinTimeOnPage(minTimeSeconds: number) {
   const [elapsed, setElapsed] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const startTimeRef = useRef<number>(Date.now());
+  const startTimeRef = useRef<number>(0);
   const pausedTimeRef = useRef<number>(0);
 
   const isUnlocked = elapsed >= minTimeSeconds;
@@ -34,7 +34,9 @@ export function useMinTimeOnPage(minTimeSeconds: number) {
   useEffect(() => {
     if (isUnlocked) return;
 
-    startTimeRef.current = Date.now();
+    if (startTimeRef.current === 0) {
+      startTimeRef.current = Date.now();
+    }
 
     intervalRef.current = setInterval(() => {
       const now = Date.now();

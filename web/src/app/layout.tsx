@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { Providers } from "@/components/Providers";
 import "./globals.css";
 
 const inter = Inter({
@@ -8,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "MathEduca — Plataforma Interativa de Matemática",
+  title: "Saberes em Conexão — Plataforma Interativa de Matemática",
   description: "Plataforma educacional interativa de matemática para alunos do 6º ao 9º ano do Ensino Fundamental. Videoaulas, quizzes e gamificação.",
   keywords: ["matemática", "educação", "quiz", "ensino fundamental", "gamificação"],
 };
@@ -21,9 +22,13 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
-      className={`${inter.variable} h-full antialiased dark`}
+      className={`${inter.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <Providers>
+          {children}
+        </Providers>
+      </body>
     </html>
   );
 }

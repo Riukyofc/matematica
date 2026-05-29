@@ -65,7 +65,7 @@ function getEmbedUrl(url: string, provider: string): string {
 // Componente Principal: LessonPlayer
 // ============================================================
 export default function LessonPlayer({ lesson, onStartQuiz }: LessonPlayerProps) {
-  const { remaining, progress, isUnlocked, formattedRemaining } =
+  const { progress, isUnlocked, formattedRemaining } =
     useMinTimeOnPage(lesson.minWatchTimeSec);
 
   const [isHoveringQuiz, setIsHoveringQuiz] = useState(false);

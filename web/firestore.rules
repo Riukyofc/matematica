@@ -1,9 +1,8 @@
 rules_version = '2';
 
 // ============================================================
-// Saberes em Conexão — Firestore Security Rules
+// Saberes em Conexão — Firestore Security Rules v2
 // ============================================================
-// Estas regras protegem todos os dados do banco.
 // Para aplicar: Firebase Console → Firestore → Regras → Colar → Publicar
 // ============================================================
 
@@ -36,17 +35,15 @@ service cloud.firestore {
     // ════════════════════════════════════════════════════════════
     // USERS — Perfis de usuário
     // ════════════════════════════════════════════════════════════
-    // - Qualquer autenticado pode ler perfis (para ranking)
-    // - Apenas o próprio usuário pode criar/editar seu perfil
-    // - Professores/Admin podem ler qualquer perfil
-    // - Ninguém pode alterar o campo 'role' (exceto admin)
     match /users/{userId} {
       allow read: if isAuthenticated();
 
+      // Permite criar perfil com role STUDENT ou TEACHER
       allow create: if isOwner(userId) &&
         request.resource.data.keys().hasAll(['name', 'email', 'role']) &&
-        request.resource.data.role == 'STUDENT';
+        (request.resource.data.role == 'STUDENT' || request.resource.data.role == 'TEACHER');
 
+      // Usuário pode atualizar seu próprio perfil (exceto role e email)
       allow update: if isOwner(userId) &&
         (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'email']));
 
@@ -59,7 +56,7 @@ service cloud.firestore {
       match /quizResults/{resultId} {
         allow read: if isOwner(userId) || isTeacherOrAdmin();
         allow create: if isOwner(userId);
-        allow update, delete: if false; // Resultados são imutáveis
+        allow update, delete: if false;
       }
 
       // ── Sub-coleção: Notas do Aluno ──
@@ -83,10 +80,16 @@ service cloud.firestore {
     }
 
     // ════════════════════════════════════════════════════════════
+    // TRACKS — Trilhas de aprendizado
+    // ════════════════════════════════════════════════════════════
+    match /tracks/{trackId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isTeacherOrAdmin();
+    }
+
+    // ════════════════════════════════════════════════════════════
     // LESSONS — Aulas
     // ════════════════════════════════════════════════════════════
-    // - Todos autenticados podem ler
-    // - Apenas professores/admin podem criar/editar/deletar
     match /lessons/{lessonId} {
       allow read: if isAuthenticated();
       allow create, update, delete: if isTeacherOrAdmin();
@@ -103,14 +106,6 @@ service cloud.firestore {
         allow read: if isAuthenticated();
         allow create, update, delete: if isTeacherOrAdmin();
       }
-    }
-
-    // ════════════════════════════════════════════════════════════
-    // TRACKS — Trilhas de aprendizado
-    // ════════════════════════════════════════════════════════════
-    match /tracks/{trackId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if isTeacherOrAdmin();
     }
 
     // ════════════════════════════════════════════════════════════
@@ -134,14 +129,23 @@ service cloud.firestore {
     // ════════════════════════════════════════════════════════════
     match /globalStats/{docId} {
       allow read: if isAuthenticated();
-      allow write: if false; // Atualizado apenas por Cloud Functions
+      allow write: if false;
     }
 
     // ════════════════════════════════════════════════════════════
-    // Bloqueia tudo que não foi explicitamente permitido
+    // SETTINGS — Configurações da plataforma
     // ════════════════════════════════════════════════════════════
-    match /{document=**} {
-      allow read, write: if false;
+    match /settings/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isTeacherOrAdmin();
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // FORMULAS — Fórmulas customizadas
+    // ════════════════════════════════════════════════════════════
+    match /formulas/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isTeacherOrAdmin();
     }
   }
 }
