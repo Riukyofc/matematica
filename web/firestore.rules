@@ -147,5 +147,23 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow write: if isTeacherOrAdmin();
     }
+
+    // ════════════════════════════════════════════════════════════
+    // SHOP ITEMS — Itens da lojinha
+    // ════════════════════════════════════════════════════════════
+    match /shopItems/{itemId} {
+      allow read: if isAuthenticated();
+      allow write: if isTeacherOrAdmin();
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // DUELS — Arena Matemática
+    // ════════════════════════════════════════════════════════════
+    match /duels/{duelId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isTeacherOrAdmin();
+    }
   }
 }
