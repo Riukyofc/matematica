@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { getCustomFormulas, type Formula } from "@/lib/firebase";
 
 const DEFAULT_FORMULAS = [
@@ -13,6 +13,7 @@ const DEFAULT_FORMULAS = [
     { name: "Área do Triângulo", formula: "A = (b × h) / 2" },
     { name: "Área do Círculo", formula: "A = π × r²" },
     { name: "Pitágoras", formula: "a² = b² + c²" },
+    { name: "Circunferência", formula: "C = 2 × π × r" },
   ]},
   { cat: "Estatística", items: [
     { name: "Média", formula: "M = Σx / n" },
@@ -23,6 +24,14 @@ const DEFAULT_FORMULAS = [
 export default function FormulasPage() {
   const [firestoreFormulas, setFirestoreFormulas] = useState<Formula[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [copied, setCopied] = useState<string | null>(null);
+  const [favorites, setFavorites] = useState<string[]>([]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("favoriteFormulas");
+    if (saved) setFavorites(JSON.parse(saved));
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -44,47 +53,128 @@ export default function FormulasPage() {
     return acc;
   }, {} as Record<string, { name: string; formula: string }[]>);
 
-  // Merge: use Firestore formulas if available, otherwise fallback to defaults
   const categories = firestoreFormulas.length > 0
     ? Object.entries(groupedFirestore).map(([cat, items]) => ({ cat, items }))
     : DEFAULT_FORMULAS;
 
+  const filtered = useMemo(() => {
+    if (!search.trim()) return categories;
+    const q = search.toLowerCase();
+    return categories
+      .map(cat => ({
+        ...cat,
+        items: cat.items.filter(it => it.name.toLowerCase().includes(q) || it.formula.toLowerCase().includes(q) || cat.cat.toLowerCase().includes(q))
+      }))
+      .filter(cat => cat.items.length > 0);
+  }, [categories, search]);
+
+  const copyFormula = (formula: string, name: string) => {
+    navigator.clipboard.writeText(formula);
+    setCopied(name);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  const toggleFavorite = (name: string) => {
+    const newFavs = favorites.includes(name) ? favorites.filter(f => f !== name) : [...favorites, name];
+    setFavorites(newFavs);
+    localStorage.setItem("favoriteFormulas", JSON.stringify(newFavs));
+  };
+
   return (
     <div className="max-w-4xl mx-auto py-6 animate-fade-up">
-      <div className="flex items-center gap-4 mb-8">
-        <div className="w-14 h-14 rounded-2xl bg-violet-500/10 text-violet-500 flex items-center justify-center text-2xl shadow-inner border border-violet-500/20">
-          ƒ
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
+        <div className="flex items-center gap-4 flex-1">
+          <div className="w-12 h-12 rounded-2xl bg-violet-500/10 text-violet-500 flex items-center justify-center text-2xl shadow-inner border border-violet-500/20 animate-float">
+            ƒ
+          </div>
+          <div>
+            <h1 className="text-2xl font-black heading-gradient">Banco de Fórmulas</h1>
+            <p className="text-xs font-medium text-[var(--color-text-muted)]">Consulte rápido e mande bem</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-violet-500 to-fuchsia-500">Banco de Fórmulas</h1>
-          <p className="text-sm font-medium text-[var(--color-text-muted)]">Consulte rápido e mande bem</p>
+
+        {/* Search */}
+        <div className="relative">
+          <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Buscar fórmula..."
+            className="input-premium pl-9 w-full sm:w-64"
+          />
         </div>
       </div>
 
+      {/* Favorites */}
+      {favorites.length > 0 && !search && (
+        <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.05s" }}>
+          <p className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider mb-3 flex items-center gap-2">
+            <span className="text-yellow-500">⭐</span> Favoritas
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {categories.flatMap(cat => cat.items).filter(it => favorites.includes(it.name)).map(it => (
+              <div key={it.name} className="px-3 py-2 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-sm">
+                <span className="font-bold text-[var(--color-text-primary)]">{it.name}: </span>
+                <span className="font-mono text-violet-500">{it.formula}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {loading ? (
-        <div className="grid lg:grid-cols-2 gap-6">
-          {[...Array(3)].map((_, i) => <div key={i} className="h-48 rounded-3xl bg-[var(--color-bg-secondary)] animate-pulse" />)}
+        <div className="grid lg:grid-cols-2 gap-5">
+          {[...Array(3)].map((_, i) => <div key={i} className="h-48 skeleton" />)}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-12 animate-fade-up">
+          <div className="text-4xl mb-3 opacity-50">🔍</div>
+          <p className="text-sm font-bold text-[var(--color-text-secondary)]">Nenhuma fórmula encontrada</p>
+          <p className="text-xs text-[var(--color-text-muted)]">Tente outro termo de busca</p>
         </div>
       ) : (
-        <div className="grid lg:grid-cols-2 gap-6">
-          {categories.map((cat, i) => (
+        <div className="grid lg:grid-cols-2 gap-5">
+          {filtered.map((cat, i) => (
             <div 
               key={cat.cat} 
-              className="p-6 rounded-3xl glass-card-static border border-[var(--color-border)] shadow-sm animate-fade-up"
-              style={{ animationDelay: `${i * 0.1}s` }}
+              className="p-5 rounded-2xl glass-card-static animate-fade-up"
+              style={{ animationDelay: `${0.1 + i * 0.08}s` }}
             >
-              <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-black text-[var(--color-text-primary)]">{cat.cat}</h3>
-                <span className="px-2.5 py-1 rounded-lg bg-[var(--color-bg-secondary)] text-[10px] font-bold text-[var(--color-text-secondary)] border border-[var(--color-border)]">
-                  {cat.items.length} itens
-                </span>
+                <span className="badge badge-accent">{cat.items.length} itens</span>
               </div>
               
-              <div className="space-y-3">
-                {cat.items.map((it, j) => (
-                  <div key={j} className="p-4 rounded-2xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] hover:border-violet-500/30 transition-colors">
-                    <p className="text-xs font-bold text-[var(--color-text-secondary)] mb-2 uppercase tracking-wider">{it.name}</p>
-                    <p className="text-lg sm:text-xl font-mono font-bold text-violet-500 tracking-tight">{it.formula}</p>
+              <div className="space-y-2">
+                {cat.items.map((it) => (
+                  <div key={it.name} className="p-3 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] hover:border-violet-500/30 transition-all group">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider mb-1">{it.name}</p>
+                        <p className="text-base sm:text-lg font-mono font-bold text-violet-500 tracking-tight">{it.formula}</p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => toggleFavorite(it.name)}
+                          className="p-1.5 rounded-lg hover:bg-yellow-500/10 transition-colors cursor-pointer"
+                          title="Favoritar"
+                        >
+                          <span className="text-sm">{favorites.includes(it.name) ? "⭐" : "☆"}</span>
+                        </button>
+                        <button
+                          onClick={() => copyFormula(it.formula, it.name)}
+                          className="p-1.5 rounded-lg hover:bg-[var(--color-accent-subtle)] transition-colors cursor-pointer"
+                          title="Copiar"
+                        >
+                          {copied === it.name ? (
+                            <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                          ) : (
+                            <svg className="w-4 h-4 text-[var(--color-text-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                          )}
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>

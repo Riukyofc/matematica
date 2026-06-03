@@ -77,6 +77,11 @@ service cloud.firestore {
         allow create: if isOwner(userId) || isTeacherOrAdmin();
         allow update, delete: if isTeacherOrAdmin();
       }
+
+      // ── Sub-coleção: Desafio Diário ──
+      match /dailyChallenge/{dateId} {
+        allow read, write: if isOwner(userId);
+      }
     }
 
     // ════════════════════════════════════════════════════════════

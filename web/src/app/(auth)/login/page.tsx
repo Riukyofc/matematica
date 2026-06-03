@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Image from "next/image";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { registerUser, loginUser } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,10 +18,18 @@ export default function LoginScreen() {
   const [showPass, setShowPass] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && user) {
-      router.replace("/dashboard");
-    }
+    if (!authLoading && user) router.replace("/dashboard");
   }, [user, authLoading, router]);
+
+  const pwStr = useMemo(() => {
+    if (!password) return 0;
+    let s = 0;
+    if (password.length >= 6) s++;
+    if (password.length >= 8) s++;
+    if (/[A-Z]/.test(password)) s++;
+    if (/[0-9]/.test(password)) s++;
+    return Math.min(s, 4);
+  }, [password]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +48,7 @@ export default function LoginScreen() {
       const msgs: Record<string, string> = {
         "auth/email-already-in-use": "Email já cadastrado",
         "auth/invalid-email": "Email inválido",
-        "auth/weak-password": "Senha muito fraca",
+        "auth/weak-password": "Senha fraca",
         "auth/invalid-credential": "Email ou senha incorretos",
       };
       setError(msgs[c] || "Erro de conexão");
@@ -49,89 +56,92 @@ export default function LoginScreen() {
     }
   };
 
-  if (authLoading || user) return <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg-primary)]">
-    <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-  </div>;
+  if (authLoading || user) return (
+    <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--color-bg)" }}>
+      <div className="w-10 h-10 border-3 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+
+  const [greeting, setGreeting] = useState("Olá");
+
+  useEffect(() => {
+    const hour = new Date().getHours();
+    setGreeting(hour < 12 ? "Bom dia ☀️" : hour < 18 ? "Boa tarde 🌤️" : "Boa noite 🌙");
+  }, []);
 
   return (
-    <div className="min-h-screen flex bg-[var(--color-bg-primary)] overflow-hidden">
-      {/* Left branding (Desktop) */}
-      <div className="hidden lg:flex lg:w-1/2 relative items-center justify-center p-12 bg-[var(--color-bg-secondary)] border-r border-[var(--color-border)]">
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-violet-500/10 pointer-events-none" />
-        <div className="text-center max-w-sm z-10 animate-fade-up">
-          <Image src="/logo.jpeg" alt="Logo" width={128} height={128} className="rounded-3xl mx-auto mb-6 object-cover shadow-2xl shadow-indigo-500/20" />
-          <h1 className="text-3xl font-extrabold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-violet-500">Saberes em Conexão</h1>
-          <p className="text-sm text-[var(--color-text-secondary)] mb-8 font-medium">Conhecer • Conectar • Transformar</p>
-          <div className="grid grid-cols-3 gap-4">
-            {[{ n: "12", l: "Aulas" }, { n: "50+", l: "Questões" }, { n: "4", l: "Trilhas" }].map(s => (
-              <div key={s.l} className="p-4 rounded-2xl glass-card text-center">
-                <p className="text-2xl font-black text-indigo-500">{s.n}</p>
-                <p className="text-[11px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider mt-1">{s.l}</p>
-              </div>
-            ))}
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "var(--color-bg)" }}>
+      <div className="w-full max-w-sm animate-fade-up">
+        {/* Logo */}
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 rounded-2xl mx-auto mb-3 flex items-center justify-center text-white text-2xl font-black" style={{ background: "var(--color-primary)" }}>
+            S
           </div>
+          <h1 className="text-2xl font-black">Saberes em Conexão</h1>
+          <p className="text-xs font-bold mt-1 uppercase tracking-widest" style={{ color: "var(--color-text-muted)" }}>Conhecer • Conectar • Transformar</p>
         </div>
-      </div>
 
-      {/* Form Side */}
-      <div className="flex-1 flex items-center justify-center p-5 sm:p-10 relative">
-        <div className="w-full max-w-sm z-10 animate-fade-up" style={{ animationDelay: "0.1s" }}>
-          <div className="lg:hidden text-center mb-8">
-            <Image src="/logo.jpeg" alt="Logo" width={64} height={64} className="rounded-2xl mx-auto mb-3 object-cover shadow-xl shadow-indigo-500/20" />
-            <h1 className="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-violet-500">Saberes em Conexão</h1>
-          </div>
+        {/* Form Card */}
+        <div className="card p-6">
+          <p className="text-xs font-semibold mb-1" style={{ color: "var(--color-text-muted)" }}>{greeting}</p>
+          <h2 className="text-xl font-black mb-1">{mode === "login" ? "Entrar" : "Criar conta"}</h2>
+          <p className="text-sm mb-5" style={{ color: "var(--color-text-muted)" }}>
+            {mode === "login" ? "Acesse sua conta" : "Preencha seus dados"}
+          </p>
 
-          <div className="p-8 rounded-3xl glass-card">
-            <h2 className="text-2xl font-black mb-1">{mode === "login" ? "Entrar" : "Criar conta"}</h2>
-            <p className="text-sm text-[var(--color-text-secondary)] mb-6">
-              {mode === "login" ? "Acesse sua conta para continuar" : "Preencha seus dados para começar"}
-            </p>
+          {error && (
+            <div className="mb-4 p-3 rounded-xl text-xs font-bold animate-shake" style={{ background: "var(--color-error-bg)", color: "var(--color-error)", border: "2px solid var(--color-error)" }}>
+              ⚠️ {error}
+            </div>
+          )}
 
-            {error && (
-              <div className="mb-5 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs font-semibold flex items-center gap-2 animate-shake">
-                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {error}
+          <form onSubmit={submit} className="space-y-3">
+            {mode === "register" && (
+              <div>
+                <label className="block text-xs font-bold mb-1 uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>Nome</label>
+                <input type="text" value={name} onChange={e => setName(e.target.value)} required placeholder="Seu nome" className="input-clean" autoFocus={mode === "register"} />
               </div>
             )}
-
-            <form onSubmit={submit} className="space-y-4">
-              {mode === "register" && (
-                <div>
-                  <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-1.5 uppercase tracking-wider">Nome</label>
-                  <input type="text" value={name} onChange={e => setName(e.target.value)} required placeholder="Seu nome completo" className="w-full px-4 py-3 rounded-xl bg-[var(--color-bg-input)] border border-[var(--color-border)] text-sm placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition shadow-sm" />
+            <div>
+              <label className="block text-xs font-bold mb-1 uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>Email</label>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="seu@email.com" className="input-clean" autoFocus={mode === "login"} />
+            </div>
+            <div>
+              <label className="block text-xs font-bold mb-1 uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>Senha</label>
+              <div className="relative">
+                <input type={showPass ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••" minLength={6} className="input-clean pr-16" />
+                <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase px-2 py-1 rounded cursor-pointer" style={{ color: "var(--color-text-muted)" }}>
+                  {showPass ? "Ocultar" : "Ver"}
+                </button>
+              </div>
+              {mode === "register" && password.length > 0 && (
+                <div className="flex gap-1 mt-2">
+                  {[0,1,2,3].map(i => (
+                    <div key={i} className="h-1.5 flex-1 rounded-full transition-all" style={{ background: i < pwStr ? (pwStr >= 3 ? "var(--color-success)" : pwStr >= 2 ? "var(--color-warning)" : "var(--color-error)") : "var(--color-divider)" }} />
+                  ))}
                 </div>
               )}
-              <div>
-                <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-1.5 uppercase tracking-wider">Email</label>
-                <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="seu@email.com" className="w-full px-4 py-3 rounded-xl bg-[var(--color-bg-input)] border border-[var(--color-border)] text-sm placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition shadow-sm" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-1.5 uppercase tracking-wider">Senha</label>
-                <div className="relative">
-                  <input type={showPass ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••" minLength={6} className="w-full px-4 py-3 rounded-xl bg-[var(--color-bg-input)] border border-[var(--color-border)] text-sm placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition shadow-sm pr-20" />
-                  <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-1 rounded bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition cursor-pointer text-[10px] font-bold uppercase tracking-wider">
-                    {showPass ? "Ocultar" : "Mostrar"}
-                  </button>
-                </div>
-              </div>
-              
-              <button type="submit" disabled={loading} className="w-full mt-2 py-3.5 rounded-xl btn-primary text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-2">
-                {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : mode === "login" ? "Entrar na Plataforma" : "Criar minha conta"}
-              </button>
-            </form>
-
-            <div className="mt-8 pt-6 border-t border-[var(--color-border)] text-center">
-              <p className="text-sm font-medium text-[var(--color-text-secondary)]">
-                {mode === "login" ? "Não tem conta?" : "Já tem conta?"}
-                <button onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); }} className="ml-2 text-indigo-500 font-bold hover:text-indigo-600 transition underline decoration-2 underline-offset-4 cursor-pointer">
-                  {mode === "login" ? "Cadastre-se grátis" : "Fazer login"}
-                </button>
-              </p>
             </div>
+
+            <button type="submit" disabled={loading} className="w-full btn-primary py-3 text-sm flex items-center justify-center gap-2 mt-2" style={{ borderRadius: "var(--radius)" }}>
+              {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : (mode === "login" ? "Entrar ▸" : "Criar conta ▸")}
+            </button>
+          </form>
+
+          <div className="mt-6 pt-4 text-center" style={{ borderTop: "1px solid var(--color-divider)" }}>
+            <p className="text-sm font-semibold" style={{ color: "var(--color-text-muted)" }}>
+              {mode === "login" ? "Não tem conta?" : "Já tem conta?"}
+              <button onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); }}
+                className="ml-1 font-bold underline cursor-pointer" style={{ color: "var(--color-primary)" }}>
+                {mode === "login" ? "Cadastre-se" : "Fazer login"}
+              </button>
+            </p>
           </div>
         </div>
+
+        <p className="text-center mt-4 text-[10px] font-bold" style={{ color: "var(--color-text-muted)" }}>
+          Projeto Interdisciplinar · Ensino Fundamental
+        </p>
       </div>
     </div>
   );

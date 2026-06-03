@@ -21,6 +21,8 @@ export default function ArenaPlayer({ duel, onClose }: ArenaPlayerProps) {
 
   const questions = duel.questions || [];
   const currentQ = questions[currentIdx];
+  const total = questions.length;
+  const progress = ((currentIdx + (showAnswer ? 1 : 0)) / total) * 100;
 
   useEffect(() => {
     setStartTime(Date.now());
@@ -61,25 +63,27 @@ export default function ArenaPlayer({ duel, onClose }: ArenaPlayerProps) {
 
   if (!user) return null;
 
+  // Finished screen
   if (finished) {
     return (
-      <div className="max-w-xl mx-auto text-center py-12 animate-fade-up">
-        <h2 className="text-4xl font-black mb-4">
-          {isSubmitting ? "⚔️ Calculando..." : "🎯 Duelo Concluído!"}
+      <div className="max-w-sm mx-auto text-center py-12 animate-fade-up">
+        <p className="text-5xl mb-3">{isSubmitting ? "⚔️" : "🎯"}</p>
+        <h2 className="text-2xl font-black mb-2">
+          {isSubmitting ? "Calculando..." : "Duelo Concluído!"}
         </h2>
         
         {!isSubmitting && (
-          <div className="glass-card p-8 flex flex-col items-center">
-            <p className="text-[var(--color-text-secondary)] mb-6 font-medium">Sua pontuação final:</p>
-            <div className="text-6xl font-black text-indigo-500 mb-2">{score}</div>
-            <p className="text-sm font-bold text-[var(--color-text-muted)] mb-8 uppercase tracking-wider">Pontos</p>
+          <div className="card p-6 mt-4">
+            <p className="text-sm font-semibold mb-2" style={{ color: "var(--color-text-muted)" }}>Sua pontuação:</p>
+            <p className="text-5xl font-black mb-1" style={{ color: "var(--color-primary)" }}>{score}</p>
+            <p className="text-xs font-bold uppercase tracking-wider mb-4" style={{ color: "var(--color-text-muted)" }}>Pontos</p>
             
-            <p className="text-sm text-[var(--color-text-muted)] mb-6">
-              O resultado será calculado quando seu oponente também finalizar o duelo. Se ele já jogou, você ganhou moedas e XP!
+            <p className="text-xs mb-5 leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
+              O resultado será calculado quando seu oponente finalizar. Se ele já jogou, você ganhou moedas e XP!
             </p>
 
-            <button onClick={onClose} className="btn-primary w-full py-4 rounded-xl font-bold">
-              Voltar para a Arena
+            <button onClick={onClose} className="btn-primary w-full py-3 text-sm">
+              ← Voltar para a Arena
             </button>
           </div>
         )}
@@ -90,47 +94,69 @@ export default function ArenaPlayer({ duel, onClose }: ArenaPlayerProps) {
   if (!currentQ) return null;
 
   return (
-    <div className="max-w-2xl mx-auto py-8 animate-fade-in">
-      <div className="flex items-center justify-between mb-8">
+    <div className="max-w-lg mx-auto py-6 animate-fade-in">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-2">
         <div>
-          <h2 className="text-xl font-black text-indigo-500">Questão {currentIdx + 1} de {questions.length}</h2>
-          <p className="text-sm font-bold text-[var(--color-text-muted)]">Valendo {duel.coinsReward} moedas de ouro</p>
+          <p className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>
+            ⚔️ Duelo · 🪙 {duel.coinsReward}
+          </p>
         </div>
-        <div className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-orange-500 animate-versus">
-          ARENA
-        </div>
+        <span className="text-sm font-extrabold" style={{ color: "var(--color-primary)" }}>
+          {currentIdx + 1}/{total}
+        </span>
       </div>
 
-      <div className="glass-card p-6 md:p-8 mb-8">
-        <h3 className="text-2xl font-bold mb-8 text-center">{currentQ.text}</h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {currentQ.options.map((opt, i) => {
-            const isSelected = selectedOption === i;
-            const isCorrect = i === currentQ.correctIndex;
-            let btnClass = "border-[var(--color-border)] hover:border-indigo-500 bg-[var(--color-bg-secondary)]";
-            
-            if (showAnswer) {
-              if (isCorrect) btnClass = "border-emerald-500 bg-emerald-500/10 text-emerald-600";
-              else if (isSelected) btnClass = "border-red-500 bg-red-500/10 text-red-600";
-              else btnClass = "border-[var(--color-border)] opacity-50";
-            } else if (isSelected) {
-              btnClass = "border-indigo-500 bg-indigo-500/10";
-            }
-
-            return (
-              <button
-                key={i}
-                disabled={showAnswer}
-                onClick={() => handleSelect(i)}
-                className={`p-4 rounded-xl border-2 text-left font-bold text-lg transition-all duration-300 ${btnClass}`}
-              >
-                {opt}
-              </button>
-            );
-          })}
-        </div>
+      {/* Progress bar */}
+      <div className="progress-bar progress-bar-sm mb-5">
+        <div className="progress-fill" style={{ width: `${progress}%` }} />
       </div>
+
+      {/* Question */}
+      <div className="card p-5 mb-4">
+        <h3 className="text-xl font-bold text-center">{currentQ.text}</h3>
+      </div>
+      
+      {/* Options */}
+      <div className="space-y-2.5">
+        {currentQ.options.map((opt, i) => {
+          const isSelected = selectedOption === i;
+          const isCorrect = i === currentQ.correctIndex;
+          
+          let bg = "var(--color-surface)";
+          let border = "var(--color-border)";
+          let color = "var(--color-text)";
+          
+          if (showAnswer) {
+            if (isCorrect) { bg = "var(--color-success-bg)"; border = "var(--color-success)"; color = "var(--color-success)"; }
+            else if (isSelected) { bg = "var(--color-error-bg)"; border = "var(--color-error)"; color = "var(--color-error)"; }
+            else { bg = "var(--color-bg)"; color = "var(--color-text-muted)"; }
+          }
+
+          return (
+            <button
+              key={i}
+              disabled={showAnswer}
+              onClick={() => handleSelect(i)}
+              className="w-full p-3.5 rounded-xl text-left font-bold text-base transition-all cursor-pointer flex items-center gap-3"
+              style={{ background: bg, border: `2px solid ${border}`, color }}
+            >
+              <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shrink-0" style={{
+                background: showAnswer && isCorrect ? "var(--color-success)" : showAnswer && isSelected ? "var(--color-error)" : "var(--color-divider)",
+                color: (showAnswer && (isCorrect || isSelected)) ? "white" : "var(--color-text-muted)",
+              }}>
+                {String.fromCharCode(65 + i)}
+              </span>
+              {opt}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Score */}
+      <p className="text-center mt-4 text-xs font-bold" style={{ color: "var(--color-text-muted)" }}>
+        Pontuação: <span style={{ color: "var(--color-primary)" }}>{score}</span>
+      </p>
     </div>
   );
 }
